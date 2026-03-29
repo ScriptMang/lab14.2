@@ -1,7 +1,7 @@
 import 'dotenv/config'
 
 import express from 'express'
-
+import cors from 'cors'
 import './config/connection.js'
 
 import noteRoutes from './routes/noteRoutes.js'
@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
  
 app.use(express.json());
+app.use(cors());
  
 app.use('/api/notes', noteRoutes);
 app.use('/api/users', userRoutes);

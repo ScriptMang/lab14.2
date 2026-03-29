@@ -14,8 +14,8 @@ router.get('/', async (req, res) => {
   // This currently finds all notes in the database.
   // It should only find notes owned by the logged in user.
   try {
-    const notes = await Note.find({});
-    res.json(notes);
+      const notes = await Note.find({user: {$eq: req.user._id}});
+      res.json(notes);
   } catch (err) {
     res.status(500).json(err);
   }
@@ -24,10 +24,13 @@ router.get('/', async (req, res) => {
 // POST /api/notes - Create a new note
 router.post('/', async (req, res) => {
   try {
-    const note = await Note.create({
+    const note = new Note({
       ...req.body,
       // The user ID needs to be added here
+      user: req.user._id
     });
+    console.log("What's inside the note:", note);
+    await note.save();
     res.status(201).json(note);
   } catch (err) {
     res.status(400).json(err);
@@ -39,6 +42,10 @@ router.put('/:id', async (req, res) => {
   try {
     // This needs an authorization check
     const note = await Note.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (req.user._id != note.user ){
+      return res.status(403).json({message: 'User forbidden from updating this note'})
+    }
+    
     if (!note) {
       return res.status(404).json({ message: 'No note found with this id!' });
     }
@@ -51,11 +58,15 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/notes/:id - Delete a note
 router.delete('/:id', async (req, res) => {
   try {
+    const note = await Note.findById(req.params.id);
+    if (req.user._id != note.user) {
+      return res.status(403).json({message: 'User forbidden from updating this note'});
+    }
     // This needs an authorization check
-    const note = await Note.findByIdAndDelete(req.params.id);
     if (!note) {
       return res.status(404).json({ message: 'No note found with this id!' });
     }
+    note.deleteOne({_id: req.params.id});
     res.json({ message: 'Note deleted!' });
   } catch (err) {
     res.status(500).json(err);
